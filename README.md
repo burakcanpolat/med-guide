@@ -23,10 +23,12 @@ medgemma-skills/
 │   └── medical-assistant-skill.md ← Lab, ilaç, semptom
 ├── images/                        ← Görsellerinizi buraya atın
 ├── reports/                       ← Raporlar buraya kaydedilir
-└── sample-xrays/                  ← Test görselleri
-    ├── normal/
-    ├── pneumonia/
-    └── temporal/
+└── examples/                      ← Test örnekleri
+    ├── sample-xrays/              ← Açık görseller
+    │   ├── normal/
+    │   ├── pneumonia/
+    │   └── temporal/
+    └── sample-xrays.zip           ← Aynı görseller ZIP olarak
 ```
 
 ## Hızlı Başlangıç
@@ -37,7 +39,7 @@ git clone https://github.com/burakcanpolat/medgemma-skills.git
 
 IDE'de açın, AI asistana sorun:
 
-> "sample-xrays klasöründeki X-ray'leri analiz et"
+> "examples klasöründeki X-ray'leri analiz et"
 
 > "WBC: 12.500, Hb: 9.2, Ferritin: 8 — yorumla"
 
