@@ -49,6 +49,42 @@ Birden fazla görüntü geldiğinde:
 - Sonra **KARŞILAŞTIRMA** bölümü ekle: "İlk görüntüye göre iyileşme/kötüleşme var mı?"
 - Zaman serilerinde değişimi basitçe anlat: "3 gün içinde akciğerdeki iltihap yayılmış"
 
+## Büyük ZIP / Çok Serili Analiz
+
+### Çok Sayıda Görsel Geldiğinde
+
+Bir ZIP içinde onlarca veya yüzlerce görsel olabilir (örn: tam bir DICOM serisi). Bu durumda `medgemma_api.py` otomatik olarak **temsili dilimleri** seçer — tüm görselleri tek tek API'ye göndermez. AI'ın bu davranışı bilmesi gereken noktalar:
+
+- Script, gelen görsel sayısına göre eşit aralıklı örnekleme yapar (örn: 200 görselden 10-20 temsili dilim)
+- Hangi görsellerin seçildiği çıktıda belirtilir; AI bu listeyi kullanıcıya gösterir
+- Atlanmış görseller için "Bu dilimler tüm seriyi temsil etmektedir" notunu ekle
+
+### Seri Bazlı Analiz (Alt Klasörler = Hasta Serisi)
+
+ZIP içinde alt klasörler varsa, her alt klasör ayrı bir hasta serisi olarak kabul edilir:
+
+```
+görseller.zip
+├── seri_01_akciger/    ← Hasta 1 veya çekim 1
+├── seri_02_batin/      ← Hasta 2 veya çekim 2
+└── seri_03_kontrol/    ← Takip serisi
+```
+
+Bu yapı geldiğinde:
+1. **Her seri için ayrı analiz yap** — Seri adını başlık olarak kullan
+2. **Seri özeti** — Her serinin sonunda kısa bir "Bu seride öne çıkan bulgu:" notu ekle
+3. **Genel Karşılaştırma** — Tüm seriler bittikten sonra **SERILER ARASI KARŞILAŞTIRMA** bölümü ekle:
+   - Seriler arasındaki farklar ve benzerlikler
+   - Eğer zaman serisi ise: progresyon veya iyileşme değerlendirmesi
+   - Eğer farklı bölgeler ise: birbirleriyle ilişkili olabilecek bulgular
+
+### Batch İşleme ve Bekleme
+
+Script büyük ZIP dosyalarını batch'ler halinde işleyebilir. Bu durumda:
+- Script her batch tamamlandığında çıktı verir
+- **AI tüm batch'lerin çıktısı gelmeden nihai raporu oluşturmamalıdır**
+- Tüm batch sonuçları gelince birleştirilmiş analiz yapılır
+
 ## Rapor Kaydetme
 
 Her analiz sonrası raporu `reports/` klasörüne kaydet:

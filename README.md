@@ -21,6 +21,10 @@ medgemma-skills/
 │   ├── radiology-skill.md         ← Tıbbi görüntü analizi
 │   └── medical-assistant-skill.md ← Lab, ilaç, semptom
 ├── images/                        ← Kendi görsellerinizi buraya atın
+│   └── temp/                      ← ZIP çıktı klasörü (otomatik oluşturulur)
+│       └── {zip_adı}/             ← Her ZIP ayrı alt klasöre çıkar
+├── reports/                       ← Analiz raporları (otomatik oluşturulur)
+│   └── YYYY-MM-DD_analiz_rapor.md
 └── sample-xrays/                  ← Hazır test görselleri
     ├── normal/                    ← 3 normal göğüs X-ray
     ├── pneumonia/                 ← 2 pnömoni X-ray
@@ -57,16 +61,28 @@ python medgemma_api.py images/xray.jpeg
 # Çoklu görüntü (karşılaştırmalı)
 python medgemma_api.py images/day0.jpg images/day1.jpg images/day2.jpg
 
-# ZIP dosyası
+# ZIP dosyası (images/temp/sample-xrays/ klasörüne çıkar)
 python medgemma_api.py sample-xrays.zip
+
+# Büyük ZIP — script otomatik batch yapar, temsili dilimler seçer
+python medgemma_api.py images/buyuk-seri.zip
 ```
+
+> **Windows Encoding:** Türkçe karakter içeren dosya adları (ş, ğ, ü, ç, ö, ı) otomatik olarak desteklenir. Script UTF-8, cp1252 ve latin-1 arasında otomatik geçiş yapar.
 
 ## MedGemma Pipeline
 
 ```
 Görüntü (JPEG/PNG/ZIP)
         ↓
-medgemma_api.py → Modal API (MedGemma 1.5 4B-it)
+medgemma_api.py
+  ├── Tek görüntü → doğrudan API'ye gönder
+  └── ZIP / Çok görüntü → Batch işleme
+        ├── Temsili dilimleri seç (büyük serilerde)
+        ├── Her alt klasörü ayrı seri olarak işle
+        └── Batch 1 → Batch 2 → ... → Tüm sonuçlar
+        ↓
+Modal API (MedGemma 1.5 4B-it)
         ↓
 Ham İngilizce analiz
         ↓
@@ -74,8 +90,17 @@ AI Asistan → Türkçe yapılandırılmış rapor
   ├── BULGULAR
   ├── İZLENİM
   ├── GÜVEN SEVİYESİ (🟢🟡🔴)
-  └── ÖNERİLER
+  ├── ÖNERİLER
+  └── [Çok serili ise] SERİLER ARASI KARŞILAŞTIRMA
+        ↓
+reports/ klasörüne kaydet
 ```
+
+### Büyük ZIP / Çok Serili Analiz
+
+- ZIP içinde alt klasörler varsa, her klasör **ayrı bir hasta serisi** olarak analiz edilir
+- Çok sayıda görsel içeren seriler için script **temsili dilimleri otomatik seçer**
+- Tüm seriler analiz edildikten sonra AI **genel karşılaştırma bölümü** ekler
 
 ## Örnek Kullanım
 
