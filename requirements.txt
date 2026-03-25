@@ -1,0 +1,3 @@
+# Med-Rehber — Python Dependencies
+# No external packages required. Uses only Python standard library.
+# Python 3.8+ is required.

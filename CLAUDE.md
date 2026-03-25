@@ -1,6 +1,22 @@
-# MedGemma Skills
+# Med-Rehber
 
 Tıbbi görüntü analizi ve genel tıbbi asistanlık projesi.
+
+## İlk Kullanım Kontrolü
+
+Konuşma başladığında `.env` dosyasını kontrol et. Dosya yoksa veya boşsa:
+1. Kullanıcıya "Merhaba! İlk kullanım gibi görünüyor. Kurulumu birlikte yapalım mı?" de
+2. Kullanıcı onaylarsa `skills/setup-skill.md` oku ve kurulum sihirbazını başlat
+3. Kurulum tamamlanana kadar analiz yapma
+
+Kullanıcı "kurulum", "setup", "başla", "nasıl kullanılır" derse → `skills/setup-skill.md` oku.
+Kullanıcı "yardım", "help" derse → setup skill'indeki yardım bölümünü göster.
+
+## Skill Yönlendirme
+
+- **Kurulum / setup** → `skills/setup-skill.md`
+- **Tıbbi görüntü** → `skills/radiology-skill.md`
+- **Lab, ilaç, semptom** → `skills/medical-assistant-skill.md`
 
 ## Hasta Bilgisi Toplama (Intake)
 

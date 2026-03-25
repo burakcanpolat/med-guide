@@ -8,6 +8,7 @@ Modal config: --limit-mm-per-prompt image=85 (tek istekte max 85 görüntü)
 
 import base64
 import json
+import os
 import sys
 import zipfile
 import urllib.request
@@ -19,8 +20,11 @@ from pathlib import Path
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-ENDPOINT = "https://burakcanpolat--medgemma-vllm-serve.modal.run/v1/chat/completions"
-MODEL = "google/medgemma-1.5-4b-it"
+ENDPOINT = os.environ.get(
+    "MEDGEMMA_ENDPOINT",
+    "https://burakcanpolat--medgemma-vllm-serve.modal.run/v1/chat/completions",
+)
+MODEL = os.environ.get("MEDGEMMA_MODEL", "google/medgemma-1.5-4b-it")
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif"}
 
 MAX_IMAGES_PER_REQUEST = 85  # Modal vLLM config: --limit-mm-per-prompt image=85

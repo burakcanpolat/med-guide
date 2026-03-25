@@ -1,0 +1,49 @@
+{
+  // Med-Rehber — Zed AI Configuration
+  // Copy this file as .zed/settings.json to use.
+  //
+  // IMPORTANT: You must first configure your OpenRouter API key:
+  //   1. Open Command Palette → "agent: open settings"
+  //   2. Find the OpenRouter section → paste your API key
+  //   Or set the OPENROUTER_API_KEY environment variable.
+  //
+  // Get an API key at: https://openrouter.ai/keys
+
+  "agent": {
+    "default_model": {
+      "provider": "openrouter",
+      "model": "anthropic/claude-sonnet-4"
+    }
+  }
+
+  // Optional: Uncomment to add more models to the picker.
+  //
+  // "language_models": {
+  //   "open_router": {
+  //     "api_url": "https://openrouter.ai/api/v1",
+  //     "available_models": [
+  //       {
+  //         "name": "anthropic/claude-sonnet-4",
+  //         "display_name": "Claude Sonnet 4 (Recommended)",
+  //         "max_tokens": 200000,
+  //         "supports_tools": true,
+  //         "supports_images": true
+  //       },
+  //       {
+  //         "name": "google/gemini-2.0-flash",
+  //         "display_name": "Gemini 2.0 Flash (Budget)",
+  //         "max_tokens": 1000000,
+  //         "supports_tools": true,
+  //         "supports_images": true
+  //       },
+  //       {
+  //         "name": "openrouter/auto",
+  //         "display_name": "Auto Router",
+  //         "max_tokens": 200000,
+  //         "supports_tools": true,
+  //         "supports_images": true
+  //       }
+  //     ]
+  //   }
+  // }
+}

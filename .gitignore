@@ -13,5 +13,12 @@ reports/*
 # Generated JSON
 /*.json
 
+# Environment secrets
+.env
+.env.local
+
+# Editor settings (user-specific, not project defaults)
+.zed/settings.json
+
 # Claude internals
 .claude/

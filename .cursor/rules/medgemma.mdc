@@ -3,7 +3,7 @@ description: MedGemma tıbbi görüntü analizi ve tıbbi asistanlık
 alwaysApply: true
 ---
 
-# MedGemma Skills
+# Med-Rehber
 
 Tıbbi görüntü analizi ve genel tıbbi asistanlık projesi.
 
@@ -21,8 +21,18 @@ Bu bilgileri `reports/hasta_bilgisi.md` dosyasına kaydet. Sonraki analizlerde b
 
 Acil durum belirtisi varsa → intake'i kes, 112'yi öner.
 
+## İlk Kullanım Kontrolü
+
+Konuşma başladığında `.env` dosyasını kontrol et. Dosya yoksa veya boşsa:
+1. Kullanıcıya "Merhaba! İlk kullanım gibi görünüyor. Kurulumu birlikte yapalım mı?" de
+2. Kullanıcı onaylarsa `skills/setup-skill.md` oku ve kurulum sihirbazını başlat
+3. Kurulum tamamlanana kadar analiz yapma
+
+Kullanıcı "kurulum", "setup", "başla", "nasıl kullanılır" derse → `skills/setup-skill.md` oku.
+
 ## Skill Yönlendirme
 
+- **Kurulum / setup** → `skills/setup-skill.md`
 - **Tıbbi görüntü** → `skills/radiology-skill.md`
 - **Lab, ilaç, semptom** → `skills/medical-assistant-skill.md`
 
