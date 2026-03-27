@@ -44,7 +44,7 @@ If the user says "settings", "ayarlar" → show the contents of `.env`.
 
 ## Patient Intake
 
-Before performing any analysis, collect the following from the user (ask one at a time, in their language):
+Only AFTER setup is complete and `.env` exists. Before any analysis, collect the following from the user (ask one at a time, in their language):
 
 1. **Who is this report for?** (themselves / a relative / general information)
 2. **Age and gender**
