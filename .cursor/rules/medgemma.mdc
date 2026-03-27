@@ -11,18 +11,18 @@ Medical image analysis and general medical assistant project.
 
 At the start of every conversation, check `reports/user_config.md`.
 
-- If the file exists and contains a `language:` field → use that language.
+- If the file exists and contains a `language:` field → use that language for all interactions.
 - If the file does not exist:
   1. Ask: "🌐 Please choose your language / Lütfen dilinizi seçin: 1. 🇬🇧 English  2. 🇹🇷 Türkçe"
   2. Save the choice to `reports/user_config.md` (e.g., `language: en` or `language: tr`)
   3. Confirm in the chosen language and proceed.
 
-**All communication, reports, and analysis output MUST be in the user's chosen language.**
+**All subsequent communication, reports, and analysis output MUST be in the user's chosen language.**
 
 ## First-Run Check
 
-After setting the language, check if `.env` exists. If missing:
-1. Tell the user: "Welcome! This looks like your first time. Shall we set things up together?"
+After setting the language, check if the `.env` file exists. If it doesn't:
+1. Tell the user (in their chosen language): "Welcome! This looks like your first time. Shall we set things up together?"
 2. If they agree, read `skills/setup-skill.md` and start the setup wizard
 3. Do not perform any analysis until setup is complete
 
@@ -34,8 +34,8 @@ If the user says "settings", "ayarlar" → show the contents of `.env`.
 ## Skill Routing
 
 - **Setup / install** → Read and apply `skills/setup-skill.md`
-- **Medical images** → Read and apply `skills/radiology-skill.md`
-- **Lab, medications, symptoms, medical reports** → Read and apply `skills/medical-assistant-skill.md`
+- **Medical images** (X-ray, CT, MRI) → Read and apply `skills/radiology-skill.md`
+- **Lab results, medications, symptoms, medical reports** → Read and apply `skills/medical-assistant-skill.md`
 
 ## Patient Intake
 
@@ -79,11 +79,12 @@ modal deploy scripts/modal_medgemma.py
 This creates:
 - `medgemma-vllm` app with vLLM + MedGemma model
 - `medgemma-hf-cache` volume for model weights
-- `med-images` volume for image uploads
+- `med-images` volume for image uploads (used automatically by volume-first strategy)
 
 ## Report Saving
 
-Save reports as `reports/YYYY-MM-DD_short-description_report.md`.
+The script automatically saves raw JSON results (e.g., `reports/xray_20260327_143022.json`).
+You should additionally write a human-readable report as `reports/YYYY-MM-DD_short-description_report.md` using the findings from the JSON output.
 
 ## Language & Style
 

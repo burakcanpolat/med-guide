@@ -239,6 +239,8 @@ Med-Rehber supports **English** and **Turkish**. On first use, the AI will ask y
 
 - Python 3.10+
 - Internet connection
+- Modal account (free — $30/month credit, created during setup)
+- HuggingFace account (free — needed to access MedGemma model)
 - Modal CLI (installed during setup: `uv tool install modal`)
 
 ## License

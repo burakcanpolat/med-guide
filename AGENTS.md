@@ -42,9 +42,9 @@ If the user says "settings", "ayarlar" → show the contents of `.env`.
 - **Medical images** (X-ray, CT, MRI) → Read and apply `skills/radiology-skill.md`
 - **Lab results, medications, symptoms, medical reports** → Read and apply `skills/medical-assistant-skill.md`
 
-## Patient Intake (Before Any Analysis)
+## Patient Intake
 
-Before analyzing anything, collect the following from the user (ask one at a time, in their language):
+Before performing any analysis, collect the following from the user (ask one at a time, in their language):
 
 1. **Who is this report for?** (themselves / a relative / general information)
 2. **Age and gender**

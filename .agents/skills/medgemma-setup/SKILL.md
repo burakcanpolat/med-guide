@@ -497,7 +497,7 @@ python3 scripts/medgemma_api.py test/sample-xrays/pneumonia/pneumonia-xray-1.jpe
 python3 scripts/medgemma_api.py test/sample-xrays/temporal/temporal-day0.jpg test/sample-xrays/temporal/temporal-day1.jpg test/sample-xrays/temporal/temporal-day2.jpg 2>&1 || python scripts/medgemma_api.py test/sample-xrays/temporal/temporal-day0.jpg test/sample-xrays/temporal/temporal-day1.jpg test/sample-xrays/temporal/temporal-day2.jpg 2>&1
 ```
 
-Take the MedGemma output and create a report in the user's language using the format from `skills/radiology-skill.md`.
+Take the MedGemma output and create a report in the user's language using the format from `.agents/skills/medgemma-radiology/SKILL.md` (4 sections: WHAT DO WE SEE / WHAT DOES IT MEAN / HOW CONFIDENT ARE WE / WHAT SHOULD WE DO).
 
 ---
 

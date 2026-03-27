@@ -220,7 +220,7 @@ def _api_call(content: list[dict], max_tokens: int = 1024, timeout: int = 300) -
         return f"ERROR: MedGemma connection error: {e}"
     except (KeyError, IndexError, json.JSONDecodeError) as e:
         return f"ERROR: MedGemma malformed response: {e}"
-    except subprocess.TimeoutExpired:
+    except TimeoutError:
         return "ERROR: MedGemma request timed out."
     except Exception as e:
         return f"ERROR: MedGemma API error: {e}"
@@ -525,6 +525,16 @@ def process_zip(zip_path: str | Path, force_base64: bool = False) -> dict:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    # Handle --help before anything else (works even without .env)
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print("Usage:")
+        print("  python medgemma_api.py image.jpeg                    # single image")
+        print("  python medgemma_api.py image1.jpg image2.jpg         # multiple (auto volume)")
+        print("  python medgemma_api.py archive.zip                   # ZIP (auto volume)")
+        print("  python medgemma_api.py --base64 archive.zip          # ZIP, force base64")
+        print("  python medgemma_api.py --base64 img1.jpg img2.jpg    # multiple, force base64")
+        sys.exit(0)
+
     if not ENDPOINT:
         print("ERROR: MEDGEMMA_ENDPOINT is not set.")
         print("Please create a .env file with your Modal endpoint URL.")
@@ -533,8 +543,6 @@ if __name__ == "__main__":
 
     # Parse flags
     args = sys.argv[1:]
-    if "--help" in args or "-h" in args:
-        args = []  # fall through to usage message
     force_base64 = False
     if "--base64" in args:
         force_base64 = True
@@ -598,22 +606,24 @@ if __name__ == "__main__":
                     final_names.append(name)
                     shutil.copy2(p, tmp / name)
                 print(f"[MODE] Attempting volume upload for optimal performance...")
-                if volume_upload(tmp, remote_dir):
-                    vol_paths = [f"{VOLUME_MOUNT}/{remote_dir}/{n}" for n in final_names]
-                    print(f"[MULTIPLE IMAGES] {len(paths)} files (volume mode)")
-                    result = analyze_multiple(paths, volume_paths=vol_paths)
-                    print(result)
-                    save_report({"mode": "multiple_volume", "images": paths, "analysis": result},
-                                label="multi_image")
-                    volume_cleanup(remote_dir)
-                else:
-                    print("[MODE] Volume upload failed. Falling back to base64.")
-                    print(f"[MULTIPLE IMAGES] {len(paths)} files (base64 fallback)")
-                    result = analyze_multiple(paths)
-                    print(result)
-                    save_report({"mode": "multiple", "images": paths, "analysis": result},
-                                label="multi_image")
-                shutil.rmtree(tmp, ignore_errors=True)
+                try:
+                    if volume_upload(tmp, remote_dir):
+                        vol_paths = [f"{VOLUME_MOUNT}/{remote_dir}/{n}" for n in final_names]
+                        print(f"[MULTIPLE IMAGES] {len(paths)} files (volume mode)")
+                        result = analyze_multiple(paths, volume_paths=vol_paths)
+                        print(result)
+                        save_report({"mode": "multiple_volume", "images": paths, "analysis": result},
+                                    label="multi_image")
+                        volume_cleanup(remote_dir)
+                    else:
+                        print("[MODE] Volume upload failed. Falling back to base64.")
+                        print(f"[MULTIPLE IMAGES] {len(paths)} files (base64 fallback)")
+                        result = analyze_multiple(paths)
+                        print(result)
+                        save_report({"mode": "multiple", "images": paths, "analysis": result},
+                                    label="multi_image")
+                finally:
+                    shutil.rmtree(tmp, ignore_errors=True)
             else:
                 if force_base64:
                     print(f"[MODE] Base64 mode (forced via --base64).")
