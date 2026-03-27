@@ -73,7 +73,7 @@ python3 scripts/medgemma_api.py --base64 archive.zip           # ZIP, force base
 ```
 
 **Volume-first:** ZIP and multiple images auto-upload to Modal Volume (file:// paths). Falls back to base64 if Modal CLI is unavailable.
-**Cold start:** The script detects cold starts and shows progress until the server is ready.
+**Cold start:** Handled automatically — single request with long timeout, progress shown locally (1-3 min).
 
 ## Rules
 

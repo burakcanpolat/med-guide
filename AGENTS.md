@@ -77,7 +77,7 @@ python3 scripts/medgemma_api.py --base64 archive.zip
 
 **Volume-first strategy:** For ZIP files and multiple images, the script automatically uploads to Modal Volume and uses file:// paths (41MB → 25KB for 309 images). If Modal CLI is not installed or upload fails, it falls back to base64 silently.
 
-**Cold start handling:** On first request, the script checks if the server is ready. If the Modal container is cold-starting (loading the AI model into GPU), progress feedback is shown until the server responds (typically 2-5 minutes).
+**Cold start handling:** On first request, the script sends a single readiness check with a long timeout (no polling). If the Modal container is cold-starting, progress messages are shown locally while waiting. Typically takes 1-3 minutes.
 
 Each series is independent: ≤85 images → single request, >85 → batched in groups of 85.
 MedGemma outputs in English → translate findings into the user's chosen language in plain, simple terms.
@@ -93,6 +93,7 @@ modal deploy scripts/modal_medgemma.py
 This creates:
 - `medgemma-vllm` app with vLLM + MedGemma model
 - `medgemma-hf-cache` volume for model weights (avoids re-download)
+- `vllm-cache` volume for compilation cache (faster subsequent cold starts)
 - `med-images` volume for image uploads (used automatically by volume-first strategy)
 
 ## Report Saving

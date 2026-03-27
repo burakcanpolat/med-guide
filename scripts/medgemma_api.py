@@ -94,56 +94,84 @@ def _ssl_ctx() -> ssl.SSLContext:
 _server_warm = False
 
 
-def _ping_server(timeout: int = 15) -> bool:
-    """Send a lightweight GET to /v1/models to check if the server is responding."""
+def _ensure_server_ready() -> bool:
+    """
+    Wait for the MedGemma server to be ready. Handles cold starts gracefully.
+
+    Strategy: Send ONE request with a long timeout instead of polling.
+    Modal automatically boots the container on the first request — we just wait.
+    Polling every N seconds floods Modal's queue with Pending requests, which can
+    prevent the container from ever starting. One request = one queue entry.
+    """
+    global _server_warm
+    if _server_warm:
+        return True
+
     if not ENDPOINT:
+        print("[SERVER] ERROR: No endpoint configured.")
         return False
+
     # Derive /v1/models URL from the chat completions endpoint
     if "/v1/" in ENDPOINT:
         url = ENDPOINT.split("/v1/")[0] + "/v1/models"
     else:
         url = ENDPOINT
-    try:
-        req = urllib.request.Request(url, method="GET")
-        with urllib.request.urlopen(req, timeout=timeout, context=_ssl_ctx()) as resp:
-            return resp.status == 200
-    except Exception:
-        return False
-
-
-def _ensure_server_ready() -> bool:
-    """Wait for the MedGemma server to be ready. Handles cold starts with progress feedback."""
-    global _server_warm
-    if _server_warm:
-        return True
 
     print("[SERVER] Checking MedGemma server status...")
-    if _ping_server(timeout=15):
-        print("[SERVER] Server is ready.")
-        _server_warm = True
-        return True
 
-    # Cold start detected
-    print("[SERVER] Server is starting up (cold start)...")
-    print("[SERVER] The AI model is loading into GPU memory. This typically takes 2-5 minutes.")
-
+    # Single request with long timeout — Modal queues this and boots the container
     max_wait = 600  # 10 minutes
-    start = time.time()
-    while time.time() - start < max_wait:
-        time.sleep(15)
-        elapsed = int(time.time() - start)
-        mins, secs = divmod(elapsed, 60)
-        print(f"[SERVER] Waiting... {mins}m {secs:02d}s elapsed")
-        if _ping_server(timeout=15):
+    req = urllib.request.Request(url, method="GET")
+
+    # Show progress in a background thread while the single request waits
+    import threading
+    stop_progress = threading.Event()
+    cold_start_detected = threading.Event()
+
+    def _progress_printer():
+        """Print elapsed time locally while waiting for the single HTTP request."""
+        start = time.time()
+        # Wait a bit before assuming cold start (warm server responds in <5s)
+        time.sleep(5)
+        if stop_progress.is_set():
+            return
+        cold_start_detected.set()
+        print("[SERVER] Server is starting up (cold start)...")
+        print("[SERVER] The AI model is loading into GPU memory. This typically takes 2-5 minutes.")
+        while not stop_progress.is_set():
+            stop_progress.wait(timeout=30)
+            if stop_progress.is_set():
+                return
             elapsed = int(time.time() - start)
             mins, secs = divmod(elapsed, 60)
-            print(f"[SERVER] Server is ready! (cold start took {mins}m {secs:02d}s)")
+            print(f"[SERVER] Waiting... {mins}m {secs:02d}s elapsed")
+
+    progress_thread = threading.Thread(target=_progress_printer, daemon=True)
+    progress_thread.start()
+    start = time.time()
+
+    try:
+        with urllib.request.urlopen(req, timeout=max_wait, context=_ssl_ctx()) as resp:
+            stop_progress.set()
+            progress_thread.join(timeout=2)
+            elapsed = int(time.time() - start)
+            if cold_start_detected.is_set():
+                mins, secs = divmod(elapsed, 60)
+                print(f"[SERVER] Server is ready! (cold start took {mins}m {secs:02d}s)")
+            else:
+                print("[SERVER] Server is ready.")
             _server_warm = True
             return True
-
-    print("[SERVER] Server did not respond within 10 minutes.")
-    print("[SERVER] Check your deployment: modal app list")
-    return False
+    except Exception as e:
+        stop_progress.set()
+        progress_thread.join(timeout=2)
+        elapsed = int(time.time() - start)
+        if "timed out" in str(e):
+            print(f"[SERVER] Server did not respond within {max_wait // 60} minutes.")
+        else:
+            print(f"[SERVER] Connection error: {e}")
+        print("[SERVER] Check your deployment: modal app list")
+        return False
 
 
 # ---------------------------------------------------------------------------

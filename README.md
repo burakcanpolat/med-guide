@@ -188,13 +188,13 @@ python3 scripts/medgemma_api.py archive.zip                    # ZIP (auto volum
 python3 scripts/medgemma_api.py --base64 archive.zip           # ZIP, force base64
 ```
 
-> Volume-first: ZIP and multiple images auto-upload to Modal Volume for optimal performance. Falls back to base64 if Modal CLI is not available. The script also detects cold starts and shows progress feedback.
+> Volume-first: ZIP and multiple images auto-upload to Modal Volume for optimal performance. Falls back to base64 if Modal CLI is not available. Cold starts are handled automatically with progress feedback (typically 1-3 minutes).
 
 ### Pipeline
 
 ```
 Patient info → Image → scripts/medgemma_api.py → Modal (MedGemma)
-  ├── Cold start? → progress feedback until server ready
+  ├── Cold start? → single request + progress feedback
   ├── Volume available? → auto upload, file:// paths
   ├── No volume? → base64 fallback
   ├── Series ≤85 → single request

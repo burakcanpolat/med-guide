@@ -427,8 +427,8 @@ Go to STEP 8.
 
 ```
 🔌 Let's test the connection to your MedGemma server...
-   The script will automatically detect if the server is starting up (cold start)
-   and show you the progress. This may take 2-5 minutes on the first run.
+   The script will automatically handle cold starts — it sends a single request
+   and waits for the server to be ready. This may take 1-3 minutes on the first run.
 ```
 
 Run in terminal:
@@ -436,7 +436,7 @@ Run in terminal:
 python3 scripts/medgemma_api.py test/sample-xrays/normal/normal-xray-1.jpeg 2>&1 || python scripts/medgemma_api.py test/sample-xrays/normal/normal-xray-1.jpeg 2>&1
 ```
 
-The script will show `[SERVER] Waiting...` messages if the server is cold-starting. This is normal — just wait for it to finish.
+The script will show `[SERVER] Server is starting up (cold start)...` and progress messages while waiting. This is normal — just wait for it to finish.
 
 ### If test SUCCEEDS (analysis text returned):
 
