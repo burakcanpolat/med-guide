@@ -78,13 +78,13 @@ def serve():
         "--host", "0.0.0.0",
         "--port", str(VLLM_PORT),
         "--served-model-name", MODEL_NAME,
-        "--trust-remote-code",  # Required by MedGemma — only use with trusted model sources
+        "--trust-remote-code",
         "--dtype", "bfloat16",
         "--max-model-len", "4096",
-        "--enforce-eager",  # Skip JIT/CUDA graph capture — faster cold starts on Modal
+        "--enforce-eager",
         "--gpu-memory-utilization", "0.90",
         "--limit-mm-per-prompt", '{"image": 85}',
-        "--allowed-local-media-path", "/data/images",
+        "--allowed-local-media-path", "/",
         "--uvicorn-log-level", "warning",
     ]
     subprocess.Popen(cmd)

@@ -119,23 +119,26 @@ def _ensure_server_ready() -> bool:
 
     print("[SERVER] Checking MedGemma server status...")
 
-    # Single request with long timeout — Modal queues this and boots the container
-    max_wait = 600  # 10 minutes
-    req = urllib.request.Request(url, method="GET")
-
-    # Show progress in a background thread while the single request waits
+    # Modal cold start handling:
+    # - First request triggers container boot and queues (1 queue entry only)
+    # - Modal returns HTTP 303 redirect after ~150s if the container is still starting
+    # - We follow the redirect URL (which waits for the same container) up to max_wait
+    # - Progress messages are printed locally based on elapsed time
     import threading
+
+    max_wait = 600  # 10 minutes total
+    start = time.time()
+    cold_start = False
+
+    # Background thread for progress display
     stop_progress = threading.Event()
-    cold_start_detected = threading.Event()
 
     def _progress_printer():
-        """Print elapsed time locally while waiting for the single HTTP request."""
-        start = time.time()
-        # Wait a bit before assuming cold start (warm server responds in <5s)
         time.sleep(5)
         if stop_progress.is_set():
             return
-        cold_start_detected.set()
+        nonlocal cold_start
+        cold_start = True
         print("[SERVER] Server is starting up (cold start)...")
         print("[SERVER] The AI model is loading into GPU memory. This typically takes 2-5 minutes.")
         while not stop_progress.is_set():
@@ -148,28 +151,61 @@ def _ensure_server_ready() -> bool:
 
     progress_thread = threading.Thread(target=_progress_printer, daemon=True)
     progress_thread.start()
-    start = time.time()
+
+    # Disable automatic redirect following — we handle 303 manually
+    class _NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            if code == 303:
+                return None  # Don't auto-follow; we'll handle it
+            return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+    opener = urllib.request.build_opener(_NoRedirect, urllib.request.HTTPSHandler(context=_ssl_ctx()))
+    current_url = url
 
     try:
-        with urllib.request.urlopen(req, timeout=max_wait, context=_ssl_ctx()) as resp:
-            stop_progress.set()
-            progress_thread.join(timeout=2)
-            elapsed = int(time.time() - start)
-            if cold_start_detected.is_set():
-                mins, secs = divmod(elapsed, 60)
-                print(f"[SERVER] Server is ready! (cold start took {mins}m {secs:02d}s)")
-            else:
-                print("[SERVER] Server is ready.")
-            _server_warm = True
-            return True
+        while time.time() - start < max_wait:
+            remaining = max(30, int(max_wait - (time.time() - start)))
+            req = urllib.request.Request(current_url, method="GET")
+            try:
+                with opener.open(req, timeout=remaining) as resp:
+                    if resp.status == 200:
+                        stop_progress.set()
+                        progress_thread.join(timeout=2)
+                        elapsed = int(time.time() - start)
+                        if cold_start:
+                            mins, secs = divmod(elapsed, 60)
+                            print(f"[SERVER] Server is ready! (cold start took {mins}m {secs:02d}s)")
+                        else:
+                            print("[SERVER] Server is ready.")
+                        _server_warm = True
+                        return True
+            except urllib.error.HTTPError as e:
+                if e.code == 303:
+                    # Modal redirect during cold start — follow the new URL
+                    redirect_url = e.headers.get("Location")
+                    if redirect_url:
+                        current_url = redirect_url
+                    continue
+                if e.code == 502:
+                    # Proxy is up but vLLM is still loading — retry
+                    time.sleep(5)
+                    continue
+                raise
+            except urllib.error.URLError:
+                # Connection failed, retry after short pause
+                time.sleep(5)
+                continue
+
+        # Timeout reached
+        stop_progress.set()
+        progress_thread.join(timeout=2)
+        print(f"[SERVER] Server did not respond within {max_wait // 60} minutes.")
+        print("[SERVER] Check your deployment: modal app list")
+        return False
     except Exception as e:
         stop_progress.set()
         progress_thread.join(timeout=2)
-        elapsed = int(time.time() - start)
-        if "timed out" in str(e):
-            print(f"[SERVER] Server did not respond within {max_wait // 60} minutes.")
-        else:
-            print(f"[SERVER] Connection error: {e}")
+        print(f"[SERVER] Connection error: {e}")
         print("[SERVER] Check your deployment: modal app list")
         return False
 
@@ -183,6 +219,7 @@ def _modal_available() -> bool:
     return shutil.which("modal") is not None
 
 
+
 def volume_upload(local_dir: str | Path, remote_dir: str) -> bool:
     """Upload a local directory to the med-images Modal Volume."""
     local_dir = Path(local_dir)
@@ -192,9 +229,11 @@ def volume_upload(local_dir: str | Path, remote_dir: str) -> bool:
 
     print(f"[VOLUME] Uploading {local_dir} -> {VOLUME_NAME}:{remote_dir}")
     try:
+        env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
         result = subprocess.run(
             ["modal", "volume", "put", VOLUME_NAME, local_dir.as_posix() + "/", remote_dir],
-            capture_output=True, text=True, timeout=300,
+            capture_output=True, text=True, timeout=300, encoding="utf-8", errors="replace",
+            env=env,
         )
     except subprocess.TimeoutExpired:
         print("ERROR: Volume upload timed out (>5 min).")
@@ -204,6 +243,9 @@ def volume_upload(local_dir: str | Path, remote_dir: str) -> bool:
         return False
 
     print(f"[VOLUME] Upload complete.")
+    # Note: Modal volumes are snapshot-based. Files uploaded here are only visible
+    # to containers that start AFTER the upload. Already-running containers won't
+    # see them. The client falls back to base64 if volume files are not found.
     return True
 
 
@@ -211,9 +253,11 @@ def volume_cleanup(remote_dir: str) -> None:
     """Remove uploaded images from the volume after analysis."""
     print(f"[VOLUME] Cleaning up {VOLUME_NAME}:{remote_dir}")
     try:
+        env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
         result = subprocess.run(
             ["modal", "volume", "rm", "-r", VOLUME_NAME, remote_dir],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace",
+            env=env,
         )
         if result.returncode != 0:
             print(f"WARNING: Volume cleanup failed: {result.stderr.strip()}")
@@ -245,6 +289,13 @@ def _api_call(content: list[dict], max_tokens: int = 1024, timeout: int = 300) -
             if not choices:
                 return f"ERROR: Unexpected API response (no choices): {json.dumps(result)[:500]}"
             return choices[0]["message"]["content"]
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode()[:1000]
+        except Exception:
+            pass
+        return f"ERROR: MedGemma HTTP {e.code}: {body or e.reason}"
     except urllib.error.URLError as e:
         if "timed out" in str(e):
             return "ERROR: MedGemma request timed out."
@@ -646,6 +697,10 @@ if __name__ == "__main__":
                         vol_paths = [f"{VOLUME_MOUNT}/{remote_dir}/{n}" for n in final_names]
                         print(f"[MULTIPLE IMAGES] {len(paths)} files (volume mode)")
                         result = analyze_multiple(paths, volume_paths=vol_paths)
+                        # Volume files not visible to warm container → auto fallback to base64
+                        if "ERROR:" in result and ("No such file" in result or "not found" in result.lower()):
+                            print("[MODE] Volume files not visible (container already warm). Falling back to base64.")
+                            result = analyze_multiple(paths)
                         print(result)
                         save_report({"mode": "multiple_volume", "images": paths, "analysis": result},
                                     label="multi_image")
