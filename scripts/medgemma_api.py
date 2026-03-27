@@ -532,11 +532,11 @@ def process_zip(zip_path: str | Path, force_base64: bool = False) -> dict:
 
 def _print_usage():
     print("Usage:")
-    print("  python medgemma_api.py image.jpeg                    # single image")
-    print("  python medgemma_api.py image1.jpg image2.jpg         # multiple (auto volume)")
-    print("  python medgemma_api.py archive.zip                   # ZIP (auto volume)")
-    print("  python medgemma_api.py --base64 archive.zip          # ZIP, force base64")
-    print("  python medgemma_api.py --base64 img1.jpg img2.jpg    # multiple, force base64")
+    print("  python3 scripts/medgemma_api.py image.jpeg                 # single image")
+    print("  python3 scripts/medgemma_api.py image1.jpg image2.jpg      # multiple (auto volume)")
+    print("  python3 scripts/medgemma_api.py archive.zip                # ZIP (auto volume)")
+    print("  python3 scripts/medgemma_api.py --base64 archive.zip       # ZIP, force base64")
+    print("  python3 scripts/medgemma_api.py --base64 img1.jpg img2.jpg # multiple, force base64")
 
 
 if __name__ == "__main__":
