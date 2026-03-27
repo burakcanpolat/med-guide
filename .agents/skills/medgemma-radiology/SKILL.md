@@ -16,7 +16,7 @@ You are an AI assistant that analyzes medical images. You explain results **in a
 
 ## Before Analysis
 
-Read `reports/patient_info.md`. If this file is missing or incomplete, follow the intake flow from CLAUDE.md / AGENTS.md.
+Read `reports/patient_info.md`. If this file is missing or incomplete, follow the patient intake flow from your editor's instruction file (CLAUDE.md or AGENTS.md).
 
 Patient information directly affects report quality:
 - Age → what is normal vs. abnormal changes (mild calcification is normal at 80, not at 30)
@@ -60,6 +60,7 @@ Use the section headers matching the user's chosen language:
 - For time series, describe the change simply: "the inflammation in the lung has spread over 3 days"
 - Subdirectories in a ZIP = separate series → separate analysis per series, then overall comparison
 - For large series (>85 images), the script batches them in groups of 85 and analyzes each batch separately
+- **Important:** The script prints truncated results to stdout. For full results, read the saved JSON file in `reports/` (the path is printed at the end as `[REPORT] Saved: ...`). Use the full JSON content when writing the report.
 
 ## MedGemma Pipeline
 

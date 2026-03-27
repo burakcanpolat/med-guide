@@ -172,7 +172,14 @@ Tell me "done" when you've installed it.
 ```
 Python is not installed yet. Let me install it for you.
 ```
-Run: `sudo apt update && sudo apt install python3 python3-pip -y` (or `dnf` for Fedora).
+Run the install command yourself (the user does NOT need to do this):
+- Debian/Ubuntu: `sudo apt update && sudo apt install python3 python3-pip -y`
+- Fedora: `sudo dnf install python3 python3-pip -y`
+
+If `sudo` requires a password, tell the user:
+```
+I need your permission to install Python. Please type your password when prompted.
+```
 
 When the user says "done", re-check Python version. If still missing:
 ```
@@ -393,15 +400,17 @@ This might be a temporary issue. Shall we try again?
 
 ## STEP 7: Create .env File
 
-Take the endpoint URL from the deploy output and create the configuration:
+Take the endpoint URL from the deploy output and create the `.env` file.
 
-```bash
-cat > .env << 'ENVEOF'
+**You (the AI) should write this file directly** using your file-writing capabilities — do NOT ask the user to run terminal commands. Create the file with these contents:
+
+```
 # Med-Rehber Settings
 MEDGEMMA_ENDPOINT={URL from deploy output}/v1/chat/completions
 MEDGEMMA_MODEL=google/medgemma-1.5-4b-it
-ENVEOF
 ```
+
+This approach works on all platforms (Windows, macOS, Linux) without needing bash heredocs.
 
 ```
 ✅ Configuration file created!
@@ -458,6 +467,8 @@ If the file exists and looks correct, the script should load it automatically. I
 ---
 
 ## STEP 9: First Analysis
+
+**Note:** This is a demo with sample images — skip patient intake for this step. Patient intake is required for real analyses going forward.
 
 ```
 🎉 Everything is ready! Let's do your first real analysis.

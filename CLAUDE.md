@@ -31,14 +31,16 @@ After setting the language, check if the `.env` file exists. If it doesn't:
 2. If they agree, read `skills/setup-skill.md` and start the setup wizard
 3. Do not perform any analysis until setup is complete
 
-If the user says "setup", "install", "kurulum", "get started" → read `skills/setup-skill.md`.
-If the user says "help", "yardım" → show the help section from the setup skill.
+If the user says "setup", "install", "kurulum", "get started", "start setup" → read and apply `skills/setup-skill.md`.
+If the user says "help", "yardım" → read the HELP COMMAND section from `.agents/skills/medgemma-setup/SKILL.md`.
+If the user says "test", "connection test", "bağlantı testi" → run a test analysis with a sample image.
+If the user says "settings", "ayarlar" → show the contents of `.env`.
 
 ## Skill Routing
 
-- **Setup / install** → `skills/setup-skill.md`
-- **Medical images** (X-ray, CT, MRI) → `skills/radiology-skill.md`
-- **Lab results, medications, symptoms** → `skills/medical-assistant-skill.md`
+- **Setup / install** → Read and apply `skills/setup-skill.md`
+- **Medical images** (X-ray, CT, MRI) → Read and apply `skills/radiology-skill.md`
+- **Lab results, medications, symptoms, medical reports** → Read and apply `skills/medical-assistant-skill.md`
 
 ## Patient Intake
 
@@ -95,7 +97,8 @@ This creates:
 
 ## Report Saving
 
-Save reports as `reports/YYYY-MM-DD_short-description_report.md`.
+The script automatically saves raw JSON results (e.g., `reports/xray_20260327_143022.json`).
+You should additionally write a human-readable report as `reports/YYYY-MM-DD_short-description_report.md` using the findings from the JSON output.
 
 ## Language & Style
 

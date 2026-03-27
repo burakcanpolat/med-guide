@@ -2,7 +2,7 @@
 
 This skill guides non-technical users through the complete Med-Rehber setup from scratch.
 
-Detailed instructions: `.agents/skills/medgemma-setup/SKILL.md`
+**Read and follow the full wizard:** `.agents/skills/medgemma-setup/SKILL.md`
 
 ## Summary Flow
 

@@ -16,7 +16,7 @@ You are an AI assistant that helps with medical topics. You interpret lab result
 
 ## Before Analysis
 
-Read `reports/patient_info.md`. If this file is missing or incomplete, follow the intake flow from CLAUDE.md / AGENTS.md.
+Read `reports/patient_info.md`. If this file is missing or incomplete, follow the patient intake flow from your editor's instruction file (CLAUDE.md or AGENTS.md).
 
 ## Lab Results
 

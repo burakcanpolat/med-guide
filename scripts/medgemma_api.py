@@ -533,6 +533,8 @@ if __name__ == "__main__":
 
     # Parse flags
     args = sys.argv[1:]
+    if "--help" in args or "-h" in args:
+        args = []  # fall through to usage message
     force_base64 = False
     if "--base64" in args:
         force_base64 = True
