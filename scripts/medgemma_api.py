@@ -3,11 +3,7 @@ MedGemma API Client — Unified
 Sends images to MedGemma model deployed on Modal.
 Includes ZIP smart-routing, series detection, batch processing, and JSON report saving.
 
-Image transfer strategy (volume-first):
-  - volume (automatic): Uploads to Modal Volume, sends file:// paths. Used automatically
-    for ZIP files and multiple images when Modal CLI is available.
-  - base64 (fallback): Encodes images inline in JSON. Used for single images, or as
-    fallback when Modal CLI is not installed or volume upload fails.
+All images are sent as base64-encoded data inline in the JSON request.
 
 Cold start handling:
   Before the first analysis, the script checks if the server is ready. If the Modal
@@ -16,10 +12,9 @@ Cold start handling:
 Modal config: --limit-mm-per-prompt image=85 (max 85 images per request)
 
 Usage:
-  python3 scripts/medgemma_api.py image.jpeg                 # single, base64
-  python3 scripts/medgemma_api.py image1.jpg image2.jpg      # multiple, auto volume
-  python3 scripts/medgemma_api.py archive.zip                # ZIP, auto volume
-  python3 scripts/medgemma_api.py --base64 archive.zip       # ZIP, force base64
+  python3 scripts/medgemma_api.py image.jpeg                 # single image
+  python3 scripts/medgemma_api.py image1.jpg image2.jpg      # multiple images
+  python3 scripts/medgemma_api.py archive.zip                # ZIP archive
 
 Note: On Windows, use `python` instead of `python3` if `python3` is not available.
 """
@@ -28,7 +23,6 @@ import base64
 import json
 import os
 import shutil
-import subprocess
 import sys
 import time
 import zipfile
@@ -70,8 +64,6 @@ _MIME_MAP = {
 }
 
 MAX_IMAGES_PER_REQUEST = 85  # Modal vLLM config: --limit-mm-per-prompt image=85
-VOLUME_NAME = "med-images"
-VOLUME_MOUNT = "/data/images"  # Must match modal_medgemma.py
 
 
 # ---------------------------------------------------------------------------
@@ -211,61 +203,6 @@ def _ensure_server_ready() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Volume helpers (requires modal CLI)
-# ---------------------------------------------------------------------------
-
-def _modal_available() -> bool:
-    """Check if modal CLI is installed."""
-    return shutil.which("modal") is not None
-
-
-
-def volume_upload(local_dir: str | Path, remote_dir: str) -> bool:
-    """Upload a local directory to the med-images Modal Volume."""
-    local_dir = Path(local_dir)
-    if not local_dir.exists():
-        print(f"ERROR: Directory not found: {local_dir}")
-        return False
-
-    print(f"[VOLUME] Uploading {local_dir} -> {VOLUME_NAME}:{remote_dir}")
-    try:
-        env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
-        result = subprocess.run(
-            ["modal", "volume", "put", VOLUME_NAME, local_dir.as_posix() + "/", remote_dir],
-            capture_output=True, text=True, timeout=300, encoding="utf-8", errors="replace",
-            env=env,
-        )
-    except subprocess.TimeoutExpired:
-        print("ERROR: Volume upload timed out (>5 min).")
-        return False
-    if result.returncode != 0:
-        print(f"ERROR: Volume upload failed: {result.stderr}")
-        return False
-
-    print(f"[VOLUME] Upload complete.")
-    # Note: Modal volumes are snapshot-based. Files uploaded here are only visible
-    # to containers that start AFTER the upload. Already-running containers won't
-    # see them. The client falls back to base64 if volume files are not found.
-    return True
-
-
-def volume_cleanup(remote_dir: str) -> None:
-    """Remove uploaded images from the volume after analysis."""
-    print(f"[VOLUME] Cleaning up {VOLUME_NAME}:{remote_dir}")
-    try:
-        env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
-        result = subprocess.run(
-            ["modal", "volume", "rm", "-r", VOLUME_NAME, remote_dir],
-            capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace",
-            env=env,
-        )
-        if result.returncode != 0:
-            print(f"WARNING: Volume cleanup failed: {result.stderr.strip()}")
-    except subprocess.TimeoutExpired:
-        print("WARNING: Volume cleanup timed out.")
-
-
-# ---------------------------------------------------------------------------
 # API call — sends payload to the endpoint
 # ---------------------------------------------------------------------------
 
@@ -307,19 +244,14 @@ def _api_call(content: list[dict], max_tokens: int = 1024, timeout: int = 300) -
 
 
 # ---------------------------------------------------------------------------
-# Image content builders — base64 vs file:// path
+# Image content builder — base64
 # ---------------------------------------------------------------------------
 
-def _image_content_base64(image_path: Path) -> dict:
+def _image_content(image_path: Path) -> dict:
     """Build an image_url content block using base64 encoding."""
     mime = _MIME_MAP.get(image_path.suffix.lower(), "image/png")
     b64 = base64.b64encode(image_path.read_bytes()).decode()
     return {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
-
-
-def _image_content_volume(volume_path: str) -> dict:
-    """Build an image_url content block using a file:// path on the Modal Volume."""
-    return {"type": "image_url", "image_url": {"url": f"file://{volume_path}"}}
 
 
 # ---------------------------------------------------------------------------
@@ -327,24 +259,18 @@ def _image_content_volume(volume_path: str) -> dict:
 # ---------------------------------------------------------------------------
 
 def analyze_image(image_path: str | Path,
-                  prompt: str = "Analyze this medical image. Provide detailed findings.",
-                  volume_path: str | None = None) -> str:
+                  prompt: str = "Analyze this medical image. Provide detailed findings.") -> str:
     """Analyze a single image with MedGemma."""
     path = Path(image_path)
-    if volume_path:
-        img_block = _image_content_volume(volume_path)
-    elif not path.exists():
+    if not path.exists():
         return f"ERROR: File not found: {image_path}"
-    else:
-        img_block = _image_content_base64(path)
 
-    content = [{"type": "text", "text": prompt}, img_block]
+    content = [{"type": "text", "text": prompt}, _image_content(path)]
     return _api_call(content, max_tokens=1024, timeout=300)
 
 
 def analyze_multiple(image_paths: list[str | Path],
-                     prompt: str = "Compare these medical images. Analyze progression.",
-                     volume_paths: list[str] | None = None) -> str:
+                     prompt: str = "Compare these medical images. Analyze progression.") -> str:
     """Send multiple images to MedGemma in a single request (max 85)."""
     content: list[dict] = [{"type": "text", "text": prompt}]
 
@@ -352,15 +278,11 @@ def analyze_multiple(image_paths: list[str | Path],
     if total > MAX_IMAGES_PER_REQUEST:
         return f"ERROR: Too many images ({total}). Maximum is {MAX_IMAGES_PER_REQUEST} per request. Use analyze_series() for batching."
 
-    if volume_paths:
-        for vp in volume_paths:
-            content.append(_image_content_volume(vp))
-    else:
-        for p in image_paths:
-            path = Path(p)
-            if not path.exists():
-                return f"ERROR: File not found: {p}"
-            content.append(_image_content_base64(path))
+    for p in image_paths:
+        path = Path(p)
+        if not path.exists():
+            return f"ERROR: File not found: {p}"
+        content.append(_image_content(path))
 
     return _api_call(content, max_tokens=2048, timeout=600)
 
@@ -439,35 +361,22 @@ def detect_series(image_paths: list[Path], extraction_root: Path) -> dict[str, l
 # Series analysis — each series is independent
 # ---------------------------------------------------------------------------
 
-def analyze_series(series_name: str, images: list[Path],
-                   volume_remote_dir: str | None = None,
-                   extraction_root: Path | None = None) -> dict:
+def analyze_series(series_name: str, images: list[Path]) -> dict:
     """
     Analyze a single series.
-    - ≤85 images → send all in a single request
-    - >85 images → split into batches of 85
+    - <=85 images -> send all in a single request
+    - >85 images -> split into batches of 85
     """
     total = len(images)
-    mode_label = "volume" if volume_remote_dir else "base64"
     print(f"\n{'='*60}")
-    print(f"  SERIES: {series_name} ({total} images, {mode_label})")
+    print(f"  SERIES: {series_name} ({total} images)")
     print(f"{'='*60}")
 
     series_result = {
         "series_name": series_name,
         "total_images": total,
-        "mode": mode_label,
         "batches": [],
     }
-
-    def _volume_paths(batch_images: list[Path]) -> list[str] | None:
-        if not volume_remote_dir or not extraction_root:
-            return None
-        paths = []
-        for img in batch_images:
-            rel = img.relative_to(extraction_root)
-            paths.append(f"{VOLUME_MOUNT}/{volume_remote_dir}/{rel.as_posix()}")
-        return paths
 
     if total <= MAX_IMAGES_PER_REQUEST:
         print(f"  -> Sending {total} images in a single request...")
@@ -477,7 +386,7 @@ def analyze_series(series_name: str, images: list[Path],
             "and all notable findings across the entire series. "
             "Note any progression or changes between slices."
         )
-        answer = analyze_multiple(images, prompt, volume_paths=_volume_paths(images))
+        answer = analyze_multiple(images, prompt)
         print(f"  -> Result: {answer[:200]}...")
         series_result["batches"].append({
             "batch": 1,
@@ -498,7 +407,7 @@ def analyze_series(series_name: str, images: list[Path],
                 f"from a series of {total} total slices. "
                 "Describe the imaging modality, body region, and key findings in this segment."
             )
-            answer = analyze_multiple(batch, prompt, volume_paths=_volume_paths(batch))
+            answer = analyze_multiple(batch, prompt)
             print(f"  -> Result: {answer[:200]}...")
             series_result["batches"].append({
                 "batch": idx,
@@ -531,13 +440,8 @@ def save_report(data: dict, label: str = "report") -> Path:
 # Smart ZIP dispatcher
 # ---------------------------------------------------------------------------
 
-def process_zip(zip_path: str | Path, force_base64: bool = False) -> dict:
-    """
-    Extract ZIP, split into series, analyze each series independently.
-    Automatically uses volume mode when Modal CLI is available (volume-first).
-    Falls back to base64 if Modal is not installed or volume upload fails.
-    Pass force_base64=True to skip volume and use base64 directly.
-    """
+def process_zip(zip_path: str | Path) -> dict:
+    """Extract ZIP, split into series, analyze each series independently."""
     zip_path = Path(zip_path)
     if not zip_path.exists():
         print(f"ERROR: ZIP file not found: {zip_path}")
@@ -551,26 +455,10 @@ def process_zip(zip_path: str | Path, force_base64: bool = False) -> dict:
         return {}
 
     zip_label = Path(zip_path).stem
-    session_id = f"{zip_label}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
-
-    # Volume-first: try volume automatically unless forced to base64
-    volume_remote_dir = None
-    if force_base64:
-        print("[MODE] Base64 mode (forced via --base64).")
-    elif _modal_available():
-        remote_dir = f"sessions/{session_id}"
-        print("[MODE] Attempting volume upload for optimal performance...")
-        if volume_upload(extraction_root, remote_dir):
-            volume_remote_dir = remote_dir
-        else:
-            print("[MODE] Volume upload failed. Falling back to base64.")
-    else:
-        print("[MODE] Modal CLI not found. Using base64 mode.")
 
     # Detect series
     series_map = detect_series(images, extraction_root)
-    mode_label = "volume" if volume_remote_dir else "base64"
-    print(f"\n[PLAN] {total} images, {len(series_map)} series ({mode_label} mode):")
+    print(f"\n[PLAN] {total} images, {len(series_map)} series:")
     for name, imgs in series_map.items():
         batches_needed = (len(imgs) + MAX_IMAGES_PER_REQUEST - 1) // MAX_IMAGES_PER_REQUEST
         mode = "single request" if len(imgs) <= MAX_IMAGES_PER_REQUEST else f"{batches_needed} batches"
@@ -581,24 +469,17 @@ def process_zip(zip_path: str | Path, force_base64: bool = False) -> dict:
         "zip_file": str(zip_path),
         "total_images": total,
         "total_series": len(series_map),
-        "mode": mode_label,
         "series": {},
     }
 
     try:
         for series_name, series_images in series_map.items():
-            series_result = analyze_series(
-                series_name, series_images,
-                volume_remote_dir=volume_remote_dir,
-                extraction_root=extraction_root,
-            )
+            series_result = analyze_series(series_name, series_images)
             results["series"][series_name] = series_result
 
         save_report(results, label=zip_label)
     finally:
-        # Always clean up, even if analysis fails
-        if volume_remote_dir:
-            volume_cleanup(volume_remote_dir)
+        # Always clean up extracted files, even if analysis fails
         if extraction_root.exists():
             shutil.rmtree(extraction_root, ignore_errors=True)
 
@@ -612,10 +493,8 @@ def process_zip(zip_path: str | Path, force_base64: bool = False) -> dict:
 def _print_usage():
     print("Usage:")
     print("  python3 scripts/medgemma_api.py image.jpeg                 # single image")
-    print("  python3 scripts/medgemma_api.py image1.jpg image2.jpg      # multiple (auto volume)")
-    print("  python3 scripts/medgemma_api.py archive.zip                # ZIP (auto volume)")
-    print("  python3 scripts/medgemma_api.py --base64 archive.zip       # ZIP, force base64")
-    print("  python3 scripts/medgemma_api.py --base64 img1.jpg img2.jpg # multiple, force base64")
+    print("  python3 scripts/medgemma_api.py image1.jpg image2.jpg      # multiple images")
+    print("  python3 scripts/medgemma_api.py archive.zip                # ZIP archive")
 
 
 if __name__ == "__main__":
@@ -630,15 +509,7 @@ if __name__ == "__main__":
         print("See .env.example for details.")
         sys.exit(1)
 
-    # Parse flags
     args = sys.argv[1:]
-    force_base64 = False
-    if "--base64" in args:
-        force_base64 = True
-        args.remove("--base64")
-    # --volume is kept for backward compatibility (now the default, silently ignored)
-    if "--volume" in args:
-        args.remove("--volume")
 
     if len(args) < 1:
         _print_usage()
@@ -661,67 +532,18 @@ if __name__ == "__main__":
     input_path = args[0]
 
     if input_path.lower().endswith(".zip"):
-        process_zip(input_path, force_base64=force_base64)
+        process_zip(input_path)
     else:
         paths = args
         if len(paths) == 1:
-            # Single image: always base64 (efficient enough)
             print(f"[SINGLE IMAGE] {paths[0]}")
             result = analyze_image(paths[0])
             print(result)
             save_report({"mode": "single", "image": paths[0], "analysis": result},
                         label=Path(paths[0]).stem)
         else:
-            # Multiple images: volume-first with base64 fallback
-            if not force_base64 and _modal_available():
-                session_id = f"multi_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                remote_dir = f"sessions/{session_id}"
-                tmp = Path("images") / "temp" / session_id
-                tmp.mkdir(parents=True, exist_ok=True)
-                seen_names: set[str] = set()
-                final_names: list[str] = []
-                for p in paths:
-                    name = Path(p).name
-                    if name in seen_names:
-                        stem = Path(p).stem
-                        suffix = Path(p).suffix
-                        name = f"{stem}_{hash(p) % 10000}{suffix}"
-                    seen_names.add(name)
-                    final_names.append(name)
-                    shutil.copy2(p, tmp / name)
-                print(f"[MODE] Attempting volume upload for optimal performance...")
-                volume_uploaded = False
-                try:
-                    if volume_upload(tmp, remote_dir):
-                        volume_uploaded = True
-                        vol_paths = [f"{VOLUME_MOUNT}/{remote_dir}/{n}" for n in final_names]
-                        print(f"[MULTIPLE IMAGES] {len(paths)} files (volume mode)")
-                        result = analyze_multiple(paths, volume_paths=vol_paths)
-                        # Volume files not visible to warm container → auto fallback to base64
-                        if "ERROR:" in result and ("No such file" in result or "not found" in result.lower()):
-                            print("[MODE] Volume files not visible (container already warm). Falling back to base64.")
-                            result = analyze_multiple(paths)
-                        print(result)
-                        save_report({"mode": "multiple_volume", "images": paths, "analysis": result},
-                                    label="multi_image")
-                    else:
-                        print("[MODE] Volume upload failed. Falling back to base64.")
-                        print(f"[MULTIPLE IMAGES] {len(paths)} files (base64 fallback)")
-                        result = analyze_multiple(paths)
-                        print(result)
-                        save_report({"mode": "multiple", "images": paths, "analysis": result},
-                                    label="multi_image")
-                finally:
-                    if volume_uploaded:
-                        volume_cleanup(remote_dir)
-                    shutil.rmtree(tmp, ignore_errors=True)
-            else:
-                if force_base64:
-                    print(f"[MODE] Base64 mode (forced via --base64).")
-                else:
-                    print(f"[MODE] Modal CLI not found. Using base64 mode.")
-                print(f"[MULTIPLE IMAGES] {len(paths)} files")
-                result = analyze_multiple(paths)
-                print(result)
-                save_report({"mode": "multiple", "images": paths, "analysis": result},
-                            label="multi_image")
+            print(f"[MULTIPLE IMAGES] {len(paths)} files")
+            result = analyze_multiple(paths)
+            print(result)
+            save_report({"mode": "multiple", "images": paths, "analysis": result},
+                        label="multi_image")

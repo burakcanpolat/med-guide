@@ -4,7 +4,6 @@ Modal deployment script for MedGemma vLLM server.
 Deploys google/medgemma-1.5-4b-it on Modal with:
 - HuggingFace model cache volume (avoids re-downloading on cold start)
 - vLLM compilation cache volume (faster subsequent cold starts)
-- Medical images volume (for file:// path-based image input)
 - OpenAI-compatible API endpoint (/v1/chat/completions)
 
 Usage:
@@ -34,7 +33,6 @@ MINUTES = 60
 # Volumes
 hf_cache_vol = modal.Volume.from_name("medgemma-hf-cache", create_if_missing=True)
 vllm_cache_vol = modal.Volume.from_name("vllm-cache", create_if_missing=True)
-med_images_vol = modal.Volume.from_name("med-images", create_if_missing=True)
 
 # Container image with vLLM
 # Use CUDA devel base image (Modal's recommended pattern for vLLM)
@@ -64,7 +62,6 @@ vllm_image = (
     volumes={
         "/root/.cache/huggingface": hf_cache_vol,
         "/root/.cache/vllm": vllm_cache_vol,
-        "/data/images": med_images_vol,
     },
     secrets=[modal.Secret.from_name("huggingface-token")],
     timeout=10 * MINUTES,
@@ -84,7 +81,6 @@ def serve():
         "--enforce-eager",
         "--gpu-memory-utilization", "0.90",
         "--limit-mm-per-prompt", '{"image": 85}',
-        "--allowed-local-media-path", "/",
         "--uvicorn-log-level", "warning",
     ]
     subprocess.Popen(cmd)

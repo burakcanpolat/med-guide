@@ -182,21 +182,18 @@ Ask the AI assistant in your editor:
 ### From Terminal
 
 ```bash
-python3 scripts/medgemma_api.py images/xray.jpeg              # Single image (base64)
-python3 scripts/medgemma_api.py img1.jpg img2.jpg img3.jpg     # Multiple (auto volume)
-python3 scripts/medgemma_api.py archive.zip                    # ZIP (auto volume)
-python3 scripts/medgemma_api.py --base64 archive.zip           # ZIP, force base64
+python3 scripts/medgemma_api.py images/xray.jpeg              # single image
+python3 scripts/medgemma_api.py images/d0.jpg images/d1.jpg    # multiple images
+python3 scripts/medgemma_api.py archive.zip                    # ZIP archive
 ```
 
-> Volume-first: ZIP and multiple images auto-upload to Modal Volume for optimal performance. Falls back to base64 if Modal CLI is not available. Cold starts are handled automatically with progress feedback (typically 1-3 minutes).
+> All images are sent as base64-encoded data inline in the request. Cold starts are handled automatically with progress feedback (typically 1-3 minutes).
 
 ### Pipeline
 
 ```
 Patient info → Image → scripts/medgemma_api.py → Modal (MedGemma)
   ├── Cold start? → single request + progress feedback
-  ├── Volume available? → auto upload, file:// paths
-  ├── No volume? → base64 fallback
   ├── Series ≤85 → single request
   └── Series >85 → batches of 85
         ↓
