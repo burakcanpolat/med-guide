@@ -63,10 +63,12 @@ For image analysis, use `scripts/medgemma_api.py`:
 
 ```bash
 python3 scripts/medgemma_api.py images/xray.jpeg              # single image
-python3 scripts/medgemma_api.py images/d0.jpg images/d1.jpg    # multiple images
-python3 scripts/medgemma_api.py archive.zip                    # ZIP archive
+python3 scripts/medgemma_api.py scan.dcm                      # single DICOM
+python3 scripts/medgemma_api.py images/d0.jpg images/d1.jpg   # multiple images
+python3 scripts/medgemma_api.py archive.zip                   # ZIP archive (JPEG, DICOM, or mixed)
 ```
 
+DICOM files (.dcm) are automatically converted to JPEG with appropriate windowing before analysis.
 All images are sent as base64-encoded data inline in the request.
 
 **Cold start handling:** On first request, the script sends a single readiness check with a long timeout (no polling). If the Modal container is cold-starting, progress messages are shown locally while waiting. Typically takes 1-3 minutes.
