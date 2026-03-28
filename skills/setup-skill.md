@@ -1,6 +1,6 @@
 # Setup Skill
 
-This skill guides non-technical users through the complete Med-Rehber setup from scratch.
+This skill guides non-technical users through the complete Med-Guide setup from scratch.
 
 **Read and follow the full wizard:** `.agents/skills/medgemma-setup/SKILL.md`
 

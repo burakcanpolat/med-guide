@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Med-Rehber — Quick Setup
+# Med-Guide — Quick Setup
 # Installs uv, syncs dependencies, and guides you to the AI-assisted setup wizard.
 
 set -e
 
 echo ""
 echo "================================================"
-echo "  Med-Rehber — Quick Setup"
+echo "  Med-Guide — Quick Setup"
 echo "================================================"
 echo ""
 

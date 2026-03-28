@@ -1,4 +1,4 @@
-# Med-Rehber
+# Med-Guide
 
 Medical image analysis and general medical assistant project.
 Explain everything **in a way that an ordinary person with no medical knowledge can understand**.

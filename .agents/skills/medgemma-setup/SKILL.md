@@ -1,6 +1,6 @@
 ---
 name: medgemma-setup
-description: Interactive setup wizard for Med-Rehber. Guides non-technical users through the complete setup from scratch — editor configuration, uv, Modal, HuggingFace, deployment, and first analysis. Use when the user first opens the project, says "setup", "install", "kurulum", "get started", "start setup", or when .env file is missing.
+description: Interactive setup wizard for Med-Guide. Guides non-technical users through the complete setup from scratch — editor configuration, uv, Modal, HuggingFace, deployment, and first analysis. Use when the user first opens the project, says "setup", "install", "kurulum", "get started", "start setup", or when .env file is missing.
 license: MIT
 metadata:
   author: burakcanpolat
@@ -33,7 +33,7 @@ Show this message in the user's language:
 
 **English:**
 ```
-🏥 Med-Rehber Setup Wizard
+🏥 Med-Guide Setup Wizard
 
 Welcome! I'll guide you through the setup step by step.
 You don't need any technical knowledge — I'll handle the technical parts.
@@ -52,7 +52,7 @@ Ready to begin?
 
 **Türkçe:**
 ```
-🏥 Med-Rehber Kurulum Sihirbazı
+🏥 Med-Guide Kurulum Sihirbazı
 
 Hoş geldiniz! Sizi adım adım kurulumdan geçireceğim.
 Teknik bilgiye ihtiyacınız yok — teknik kısımları ben halledeceğim.
@@ -277,7 +277,7 @@ Step 2 — Accept the model license:
 Step 3 — Create an access token:
   Open: https://huggingface.co/settings/tokens
   Click "Create new token"
-  Name it anything (e.g., "med-rehber")
+  Name it anything (e.g., "med-guide")
   Type: "Read" is sufficient
   Click "Create"
   Copy the token (it starts with hf_...)
@@ -399,7 +399,7 @@ Take the endpoint URL from the deploy output and create the `.env` file.
 **You (the AI) should write this file directly** using your file-writing capabilities — do NOT ask the user to run terminal commands. Create the file with these contents:
 
 ```dotenv
-# Med-Rehber Settings
+# Med-Guide Settings
 MEDGEMMA_ENDPOINT={URL from deploy output}/v1/chat/completions
 MEDGEMMA_MODEL=google/medgemma-1.5-4b-it
 ```
@@ -501,7 +501,7 @@ Take the MedGemma output and create a report in the user's language using the fo
 ```
 🏥 Setup Complete!
 
-Med-Rehber is ready to use. Here's what you can do:
+Med-Guide is ready to use. Here's what you can do:
 
 📸 Image Analysis:
    Share a medical image and say "analyze this X-ray"
@@ -530,7 +530,7 @@ Questions anytime? Just type "help"!
 ```
 🏥 Kurulum Tamamlandı!
 
-Med-Rehber kullanıma hazır. Neler yapabilirsiniz:
+Med-Guide kullanıma hazır. Neler yapabilirsiniz:
 
 📸 Görüntü Analizi:
    Bir tıbbi görüntü paylaşın, "bu röntgeni analiz et" deyin
@@ -563,7 +563,7 @@ If the user says "help", "yardım", "how to use":
 
 **English:**
 ```
-📖 Med-Rehber Help
+📖 Med-Guide Help
 
 Commands:
 • "setup"    → Run the setup wizard again
@@ -584,7 +584,7 @@ Having issues?
 
 **Türkçe:**
 ```
-📖 Med-Rehber Yardım
+📖 Med-Guide Yardım
 
 Komutlar:
 • "kurulum"  → Kurulum sihirbazını tekrar çalıştır

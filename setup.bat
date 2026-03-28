@@ -4,7 +4,7 @@ setlocal
 
 echo.
 echo ================================================
-echo   Med-Rehber — Quick Setup
+echo   Med-Guide — Quick Setup
 echo ================================================
 echo.
 

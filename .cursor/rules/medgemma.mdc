@@ -3,7 +3,7 @@ description: MedGemma medical image analysis and medical assistant
 alwaysApply: true
 ---
 
-# Med-Rehber
+# Med-Guide
 
 Medical image analysis and general medical assistant project.
 Explain everything **in a way that an ordinary person with no medical knowledge can understand**.

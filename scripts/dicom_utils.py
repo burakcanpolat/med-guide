@@ -1,5 +1,5 @@
 """
-DICOM image processing utilities for Med-Rehber.
+DICOM image processing utilities for Med-Guide.
 
 Handles reading, metadata extraction, windowing, JPEG conversion,
 slice sorting/selection, and series grouping for DICOM medical images.
