@@ -4,7 +4,7 @@ description: Analyzes medical images (X-ray, CT, MRI, DICOM) using MedGemma. Use
 license: MIT
 metadata:
   author: burakcanpolat
-  version: "2.0"
+  version: "3.0"
   language: en
 ---
 
@@ -62,7 +62,7 @@ When the user provides `.dcm` files (single, multiple, or in a ZIP):
 - **CT scans:** Multi-window rendering (soft tissue, lung, bone) — each window sent as a separate image
 - **MRI:** Percentile normalization (1st–99th percentile) for optimal contrast
 - **X-ray (CR/DX):** Uses DICOM-embedded VOI LUT window settings
-- **Metadata enrichment:** Modality, body part, and series description are extracted from DICOM tags and included in the analysis prompt for better results
+- **Metadata enrichment:** Modality, body part, and series description are extracted from DICOM tags and included in the analysis prompt
 - **Large DICOM series:** Smart slice selection (uniform sampling) instead of batching — always includes first and last slices
 - **Series grouping:** DICOM files without subdirectories are grouped by SeriesInstanceUID
 
@@ -73,7 +73,6 @@ Include DICOM metadata context when reporting findings: mention the modality, bo
 - Analyze each image separately, then add a **COMPARISON** section
 - For time series, describe the change simply: "the inflammation in the lung has spread over 3 days"
 - Subdirectories in a ZIP = separate series → separate analysis per series, then overall comparison
-- For large series (>85 images), the script batches them in groups of 85 and analyzes each batch separately
 - For large DICOM series (>85 slices), smart slice selection is used instead of batching
 - **Important:** The script prints truncated results to stdout. For full results, read the saved JSON file in `reports/` (the path is printed at the end as `[REPORT] Saved: ...`). Use the full JSON content when writing the report.
 
@@ -98,16 +97,19 @@ All images are sent as base64-encoded data inline in the request.
 3. Report normal findings too — so the user can feel at ease
 4. In emergencies, warn clearly: "This could be an emergency, go to the hospital or call 112 immediately"
 5. Do not repeat the patient's information in the report
+6. Do not make definitive diagnoses or write prescriptions — those are physician authority
+7. Age/gender affect reference ranges — ask if missing
 
 ## Report Saving
 
 Save the report as `reports/YYYY-MM-DD_short-description_report.md`.
 - Multi-analysis: `reports/YYYY-MM-DD_batch-analysis_report.md`
 - Create `reports/` directory if it does not exist
+- The script automatically saves raw JSON results (e.g., `reports/xray_20260327_143022.json`). For full results, read the saved JSON file — do not rely on truncated stdout.
 
 ## Disclaimer
 
-Append to the end of every report, in the user's language:
+**Append to the end of EVERY report**, in the user's language:
 
 | Language | Disclaimer |
 |----------|------------|

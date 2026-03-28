@@ -40,11 +40,13 @@ When medical report text is provided:
 
 ## Rules
 
-1. Use plain language in the user's chosen language — avoid medical jargon
-2. Age/gender affect reference ranges — ask if missing
-3. When uncertain, say "cannot be determined for certain, consult your doctor"
-4. Do not make definitive diagnoses or write prescriptions — those are physician authority
-5. In emergencies, warn immediately and recommend calling emergency services (112)
+1. Use plain language — "inflammation signs in both lungs" instead of "bilateral pulmonary infiltration"
+2. When uncertain, say "cannot be determined for certain, consult your doctor"
+3. Report normal findings too — so the user can feel at ease
+4. In emergencies, warn clearly: "This could be an emergency, go to the hospital or call 112 immediately"
+5. Do not repeat the patient's information in the report
+6. Do not make definitive diagnoses or write prescriptions — those are physician authority
+7. Age/gender affect reference ranges — ask if missing
 
 ## Report Saving
 
@@ -52,7 +54,7 @@ Save the report as `reports/YYYY-MM-DD_short-description_report.md`.
 
 ## Disclaimer
 
-Append to the end of every report, in the user's language:
+**Append to the end of EVERY report**, in the user's language:
 
 | Language | Disclaimer |
 |----------|------------|

@@ -1,6 +1,6 @@
 ---
 name: medgemma-setup
-description: Interactive setup wizard for Med-Rehber. Guides non-technical users through the complete setup from scratch — editor configuration, Python, Modal, HuggingFace, deployment, and first analysis. Use when the user first opens the project, says "setup", "install", or when .env file is missing.
+description: Interactive setup wizard for Med-Rehber. Guides non-technical users through the complete setup from scratch — editor configuration, uv, Modal, HuggingFace, deployment, and first analysis. Use when the user first opens the project, says "setup", "install", "kurulum", "get started", "start setup", or when .env file is missing.
 license: MIT
 metadata:
   author: burakcanpolat
@@ -398,7 +398,7 @@ Take the endpoint URL from the deploy output and create the `.env` file.
 
 **You (the AI) should write this file directly** using your file-writing capabilities — do NOT ask the user to run terminal commands. Create the file with these contents:
 
-```
+```dotenv
 # Med-Rehber Settings
 MEDGEMMA_ENDPOINT={URL from deploy output}/v1/chat/completions
 MEDGEMMA_MODEL=google/medgemma-1.5-4b-it

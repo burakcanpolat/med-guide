@@ -7,11 +7,8 @@ slice sorting/selection, and series grouping for DICOM medical images.
 Dependencies: pydicom, numpy, Pillow (PIL).
 """
 
-from __future__ import annotations
-
 import io
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 import pydicom
@@ -72,7 +69,7 @@ def is_dicom(path: Path) -> bool:
         with open(path, "rb") as fh:
             fh.seek(_DICOM_MAGIC_OFFSET)
             return fh.read(4) == _DICOM_MAGIC
-    except (OSError, IOError):
+    except OSError:
         return False
 
 
@@ -118,7 +115,7 @@ def read_dicom(path: Path) -> Dataset:
 # 3. extract_metadata
 # ---------------------------------------------------------------------------
 
-def _to_float(value: object) -> Union[float, None]:
+def _to_float(value: object) -> float | None:
     """Convert a DICOM DSfloat / MultiValue to a plain float."""
     if value is None:
         return None
@@ -231,8 +228,8 @@ def _normalize_to_uint8(arr: np.ndarray) -> np.ndarray:
 
 def dicom_to_jpeg_bytes(
     path: Path,
-    ww: Union[float, None] = None,
-    wl: Union[float, None] = None,
+    ww: float | None = None,
+    wl: float | None = None,
     quality: int = 92,
 ) -> bytes:
     """Convert a DICOM file to JPEG bytes.
@@ -250,7 +247,6 @@ def dicom_to_jpeg_bytes(
     meta = extract_metadata(ds)
     spp = meta["samples_per_pixel"] or 1
     photometric = meta["photometric_interpretation"] or ""
-    modality = (meta["modality"] or "").strip().upper()
 
     arr = ds.pixel_array  # already validated in read_dicom
 

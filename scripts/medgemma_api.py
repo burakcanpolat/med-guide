@@ -10,7 +10,7 @@ Cold start handling:
   Before the first analysis, the script checks if the server is ready. If the Modal
   container is cold-starting, progress feedback is shown until the server responds.
 
-Modal config: --limit-mm-per-prompt image=85 (max 85 images per request)
+Modal config: --limit-mm-per-prompt '{"image": 85}' (max 85 images per request)
 
 Usage:
   uv run python scripts/medgemma_api.py images/xray.jpeg              # single image
@@ -23,12 +23,13 @@ import base64
 import json
 import os
 import shutil
-import sys
-import time
-import zipfile
-import urllib.request
-import urllib.error
 import ssl
+import sys
+import threading
+import time
+import urllib.error
+import urllib.request
+import zipfile
 import datetime
 from pathlib import Path
 
@@ -72,10 +73,9 @@ def _get_dicom_utils():
     """Lazy-import dicom_utils module."""
     global _dicom_utils
     if _dicom_utils is None:
-        from pathlib import Path as _P
         import importlib.util
         spec = importlib.util.spec_from_file_location(
-            "dicom_utils", _P(__file__).resolve().parent / "dicom_utils.py"
+            "dicom_utils", Path(__file__).resolve().parent / "dicom_utils.py"
         )
         _dicom_utils = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(_dicom_utils)
@@ -134,8 +134,6 @@ def _ensure_server_ready() -> bool:
     # - Modal returns HTTP 303 redirect after ~150s if the container is still starting
     # - We follow the redirect URL (which waits for the same container) up to max_wait
     # - Progress messages are printed locally based on elapsed time
-    import threading
-
     max_wait = 600  # 10 minutes total
     start = time.time()
     cold_start = False
@@ -150,7 +148,7 @@ def _ensure_server_ready() -> bool:
         nonlocal cold_start
         cold_start = True
         print("[SERVER] Server is starting up (cold start)...")
-        print("[SERVER] The AI model is loading into GPU memory. This typically takes 2-5 minutes.")
+        print("[SERVER] The AI model is loading into GPU memory. This typically takes 1-3 minutes.")
         while not stop_progress.is_set():
             stop_progress.wait(timeout=30)
             if stop_progress.is_set():
@@ -305,7 +303,7 @@ def _is_dicom(path: Path) -> bool:
         with open(path, "rb") as fh:
             fh.seek(128)
             return fh.read(4) == b"DICM"
-    except (OSError, IOError):
+    except OSError:
         return False
 
 
